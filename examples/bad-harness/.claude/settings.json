@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "revet hook pre-bash" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command", "command": "echo '[warn] a file was edited' >&2" }]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [{ "type": "command", "command": "echo 'session finished'" }]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": ["Bash(python *)"],
+    "deny": []
+  }
+}
