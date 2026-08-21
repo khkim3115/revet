@@ -1,0 +1,13 @@
+pack: core
+version: 1
+rules:
+  - id: core/destructive-rm
+    event: pre-bash
+    match:
+      command: '\brm\s+(-[a-zA-Z]*r[a-zA-Z]*f|-[a-zA-Z]*f[a-zA-Z]*r)\b'
+    verdict: block
+    message: "Recursive force delete blocked."
+    why: >
+      settings.json permissions.deny cannot see runtime-composed commands
+      (pipes, subshells, variable expansion, globbing). This is the second line.
+    fix: "If intentional, run it outside the agent session."
