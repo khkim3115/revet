@@ -1,9 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 
 const CLI = resolve('dist/revet.cjs');
 const WARN_REPO = resolve('test/fixtures/warn-repo');
+
+// The no-config path is measured from a directory that genuinely has no
+// .claude/revet.yaml, never from the repository root. revet gates its own
+// repository now, so the root has a config: measuring "without config" there
+// quietly measured the slow path against itself, and the deferral assertion
+// below ended up comparing two identical numbers. A benchmark that stops
+// measuring what it claims to measure is the same failure this project is
+// about, so it is pinned to a directory whose contents are known.
+const NO_CONFIG = mkdtempSync(join(tmpdir(), 'revet-perf-'));
+afterAll(() => rmSync(NO_CONFIG, { recursive: true, force: true }));
 
 // G3: `pre-bash` runs in front of every single Bash call the agent makes, so
 // the whole cost -- process spawn, module graph, rule evaluation -- has to stay
@@ -26,6 +38,7 @@ const ENFORCEABLE_FLOOR_MS = BUDGET_MS - OVERHEAD_MS;
 
 const SAMPLES = 20;
 const PAYLOAD = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'ls -la' } });
+const BLOCKED = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'rm -rf /tmp/x' } });
 
 function samples(fn: () => void, n = SAMPLES): number[] {
   for (let i = 0; i < 3; i++) { try { fn(); } catch { /* expected */ } }  // warm the FS cache
@@ -43,7 +56,7 @@ function samples(fn: () => void, n = SAMPLES): number[] {
 // `fastest` is the least-contended sample, which is the best estimate of what
 // the work actually costs. It is what the regression gates use, because a
 // median on a loaded machine measures the other processes on it -- which is how
-// this file failed once at 25.02ms against a 25ms bound while the host's own
+// this file once failed at 25.02ms against a 25ms bound while the host's own
 // floor had drifted 7ms.
 //
 // `typical` is the median, which is closer to what a person waiting on the
@@ -51,7 +64,7 @@ function samples(fn: () => void, n = SAMPLES): number[] {
 const fastest = (s: number[]) => s[0] as number;
 const typical = (s: number[]) => s[Math.floor(s.length / 2)] as number;
 
-const hook = (payload: string, cwd?: string) => () => {
+const hook = (payload: string, cwd: string) => () => {
   execFileSync('node', [CLI, 'hook', 'pre-bash'],
     { input: payload, cwd, stdio: ['pipe', 'pipe', 'pipe'] });
 };
@@ -65,7 +78,7 @@ describe('performance budget', () => {
   const floor = fastest(floorSamples);
 
   it(`adds less than ${OVERHEAD_MS}ms on top of a bare node start`, () => {
-    const ms = fastest(samples(hook(PAYLOAD)));
+    const ms = fastest(samples(hook(PAYLOAD, NO_CONFIG)));
     console.log(
       `pass verdict:  ${ms.toFixed(1)}ms, ${(ms - floor).toFixed(1)}ms over a ` +
       `${floor.toFixed(1)}ms node floor  (allowance ${OVERHEAD_MS}ms)`);
@@ -76,9 +89,8 @@ describe('performance budget', () => {
   // Measured against the passing path rather than an absolute bound, because
   // the claim being made is a comparison.
   it('a blocking verdict costs no more than a passing one', () => {
-    const blocked = JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'rm -rf /tmp/x' } });
-    const block = fastest(samples(hook(blocked)));
-    const pass = fastest(samples(hook(PAYLOAD)));
+    const block = fastest(samples(hook(BLOCKED, NO_CONFIG)));
+    const pass = fastest(samples(hook(PAYLOAD, NO_CONFIG)));
     console.log(`block verdict: ${block.toFixed(1)}ms vs ${pass.toFixed(1)}ms passing`);
     expect(block).toBeLessThan(pass + OVERHEAD_MS);
   });
@@ -86,13 +98,13 @@ describe('performance budget', () => {
   it(`total cold start stays under the ${BUDGET_MS}ms budget`, () => {
     if (typical(floorSamples) > ENFORCEABLE_FLOOR_MS) {
       console.log(
-        `SKIPPED: this host starts an empty node process in ` +
+        'SKIPPED: this host starts an empty node process in ' +
         `${typical(floorSamples).toFixed(1)}ms, which leaves under ${OVERHEAD_MS}ms of the ` +
         `${BUDGET_MS}ms budget for revet. The budget is not enforceable here; the overhead ` +
         'assertions above still are. CI runs on a host that can enforce it.');
       return;
     }
-    const ms = typical(samples(hook(PAYLOAD)));
+    const ms = typical(samples(hook(PAYLOAD, NO_CONFIG)));
     console.log(`absolute: ${ms.toFixed(1)}ms median (budget ${BUDGET_MS}ms)`);
     expect(ms).toBeLessThan(BUDGET_MS);
   });
@@ -103,7 +115,7 @@ describe('performance budget', () => {
   // no-config case gets ~10ms slower and this fails.
   it('a repository with no revet.yaml never initializes the YAML parser', () => {
     const withConfig = fastest(samples(hook(PAYLOAD, WARN_REPO)));
-    const withoutConfig = fastest(samples(hook(PAYLOAD)));
+    const withoutConfig = fastest(samples(hook(PAYLOAD, NO_CONFIG)));
     console.log(
       `yaml deferral: ${withoutConfig.toFixed(1)}ms without config, ` +
       `${withConfig.toFixed(1)}ms with config`);

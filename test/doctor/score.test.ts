@@ -8,7 +8,7 @@ import type { Observations } from '../../src/doctor/scan.js';
 // zero on coverage while looking healthy to a reader.
 const base: Observations = {
   events: ['PreToolUse', 'PostToolUse', 'SessionStart'],
-  blockingGates: 2, totalGates: 2, runtimeResolvable: true,
+  blockingGates: 2, totalGates: 2, runtimeResolvable: true, unresolvableCommands: [],
   denyRules: ['Bash(rm -rf *)', 'Bash(git push --force *)'],
   broadAllows: [], contextFileLines: { 'CLAUDE.md': 90 },
 };
@@ -19,7 +19,10 @@ describe('score', () => {
   });
 
   it('raises a CRITICAL when the runtime is not resolvable', () => {
-    const r = score({ ...base, runtimeResolvable: false });
+    const r = score({
+      ...base, runtimeResolvable: false,
+      unresolvableCommands: ['node_modules/.bin/revet hook pre-bash'],
+    });
     expect(r.findings.some((f) => f.severity === 'critical' && f.dimension === 'resilience')).toBe(true);
     expect(r.dimensions.resilience).toBeLessThan(50);
   });
@@ -71,7 +74,8 @@ describe('score is not allowed to flatter', () => {
 
   it('gives every finding an actionable fix', () => {
     const r = score({
-      ...base, runtimeResolvable: false, blockingGates: 0,
+      ...base, runtimeResolvable: false,
+      unresolvableCommands: ['./hooks/gone.sh'], blockingGates: 0,
       broadAllows: ['Bash(python *)'], contextFileLines: { 'CLAUDE.md': 640 },
     });
     expect(r.findings.length).toBeGreaterThan(0);

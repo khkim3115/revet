@@ -1,11 +1,13 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { isBlockingGate, isResolvable } from './resolve.js';
 
 export interface Observations {
   events: string[];
   blockingGates: number;
   totalGates: number;
   runtimeResolvable: boolean;
+  unresolvableCommands: string[];
   denyRules: string[];
   broadAllows: string[];
   contextFileLines: Record<string, number>;
@@ -51,13 +53,18 @@ export function scan(cwd: string): Observations {
     if (existsSync(p)) contextFileLines[name] = readFileSync(p, 'utf8').split('\n').length;
   }
 
+  // Every gate is checked, not just revet's own. A hook pointing at a script
+  // that has been deleted or renamed fails exactly the same way, and it is far
+  // likelier to be the one nobody notices.
+  const unresolvableCommands = commands.filter((c) => !isResolvable(cwd, c));
+
   return {
     events,
     totalGates: commands.length,
-    blockingGates: commands.filter((c) => /revet\s+hook|exit\s+2/.test(c)).length,
-    runtimeResolvable: commands.length === 0
-      ? false
-      : commands.every((c) => !c.includes('revet') || existsSync(join(cwd, 'node_modules', '.bin', 'revet'))),
+    blockingGates: commands.filter(isBlockingGate).length,
+    // No gates at all is not "resilient" either; there is simply nothing there.
+    runtimeResolvable: commands.length > 0 && unresolvableCommands.length === 0,
+    unresolvableCommands,
     denyRules: permissions.deny ?? [],
     broadAllows: allow.filter((a) => BROAD.test(a)),
     contextFileLines,

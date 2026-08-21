@@ -75,6 +75,14 @@ result, which is nothing.
 Checking that a hook command *exists* is not the same as checking that it
 *succeeds*, and neither is the same as checking that its verdict was *delivered*.
 
+Two details decide whether such an audit is worth anything. Audit **every**
+gate, not only the ones belonging to the tool doing the auditing -- the gate
+that dies unnoticed is usually somebody's one-off script, not the vendored one.
+And resolve the command properly: an interpreter is always installed, so
+`node gate.mjs` resolves perfectly while `gate.mjs` no longer exists. Follow
+the interpreter through to its script, or the check passes on exactly the
+repositories it was written to catch.
+
 ### 4.2 Path-normalization asymmetry
 
 A gate matches paths one way; the runtime supplies them another -- different

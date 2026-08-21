@@ -1,0 +1,3 @@
+# revet gates itself. The bundle in dist/ is what the hooks call, so run
+# `npm run build` before relying on them -- `npm install` does it via `prepare`.
+packs: [core]

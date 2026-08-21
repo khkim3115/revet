@@ -44,9 +44,16 @@ export function score(obs: Observations): ScoreResult {
   });
 
   dimensions.resilience = obs.runtimeResolvable ? 100 : 20;
-  if (!obs.runtimeResolvable) findings.push({
+  if (obs.totalGates === 0) findings.push({
     severity: 'critical', dimension: 'resilience',
-    message: 'Hook command is not resolvable -- every gate silently passes.',
+    message: 'No hook gates are configured -- nothing is being enforced.',
+    fix: 'Wire PreToolUse and PostToolUse hooks in .claude/settings.json.',
+  });
+  else if (!obs.runtimeResolvable) findings.push({
+    severity: 'critical', dimension: 'resilience',
+    // Naming the command matters: the operator has to know which gate died,
+    // and an unresolvable hook produces no other evidence anywhere.
+    message: `Hook command does not resolve, so this gate silently passes: ${obs.unresolvableCommands.join(', ')}`,
     fix: 'Install the runtime locally and point settings.json at node_modules/.bin.',
   });
 

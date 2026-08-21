@@ -37,17 +37,17 @@
     "README.ko.md",
     "CLEANROOM.md"
   ],
-  "dependencies": {},
   "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.12",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0",
-    "esbuild": "^0.24.0",
-    "yaml": "^2.5.0",
-    "@types/node": "^22.0.0"
+    "vitest": "^3.2.7",
+    "yaml": "^2.5.0"
   },
   "scripts": {
     "compile:packs": "node scripts/compile-packs.mjs",
     "build": "npm run compile:packs && node esbuild.config.mjs",
+    "prepare": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "bench": "vitest run test/perf.bench.ts",
