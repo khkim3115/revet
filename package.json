@@ -3,10 +3,40 @@
   "version": "0.1.0",
   "description": "Guardrails for AI coding agents on legacy codebases",
   "license": "MIT",
+  "author": "Kwanghwi Kim (https://github.com/khkim3115)",
+  "homepage": "https://github.com/khkim3115/revet#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khkim3115/revet.git"
+  },
+  "bugs": {
+    "url": "https://github.com/khkim3115/revet/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "agent",
+    "hooks",
+    "guardrails",
+    "legacy",
+    "linter",
+    "static-analysis",
+    "ai-safety"
+  ],
   "type": "module",
-  "bin": { "revet": "./dist/revet.cjs" },
-  "engines": { "node": ">=20.0.0" },
-  "files": ["dist", "packs", "README.md", "README.ko.md"],
+  "bin": {
+    "revet": "./dist/revet.cjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "packs",
+    "docs",
+    "README.md",
+    "README.ko.md",
+    "CLEANROOM.md"
+  ],
   "dependencies": {},
   "devDependencies": {
     "typescript": "^5.6.0",
