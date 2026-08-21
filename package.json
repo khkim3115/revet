@@ -4,7 +4,7 @@
   "description": "Guardrails for AI coding agents on legacy codebases",
   "license": "MIT",
   "type": "module",
-  "bin": { "revet": "./dist/revet.js" },
+  "bin": { "revet": "./dist/revet.cjs" },
   "engines": { "node": ">=20.0.0" },
   "files": ["dist", "packs", "README.md", "README.ko.md"],
   "dependencies": {},

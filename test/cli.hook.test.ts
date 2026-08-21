@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
-const CLI = resolve('dist/revet.js');
+const CLI = resolve('dist/revet.cjs');
 const WARN_REPO = resolve('test/fixtures/warn-repo');
 
 function runHook(

@@ -26,7 +26,7 @@ function readStdin(): string {
   }
 }
 
-function cmdHook(eventArg: string): void {
+async function cmdHook(eventArg: string): Promise<void> {
   if (!EVENTS.includes(eventArg as EventName)) fail(`unknown hook event: ${eventArg}`);
 
   let raw: unknown;
@@ -37,7 +37,7 @@ function cmdHook(eventArg: string): void {
   }
 
   const event = eventArg as EventName;
-  const rules = loadRules(loadConfig(process.cwd()));
+  const rules = loadRules(await loadConfig(process.cwd()));
   const { exitCode, stderr, stdout } = respond(match(adapt(event, raw), rules), event);
 
   // stdout carries the agent-visible channel and must stay parseable as JSON,
