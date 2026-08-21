@@ -1,0 +1,26 @@
+{
+  "name": "revet",
+  "version": "0.1.0",
+  "description": "Guardrails for AI coding agents on legacy codebases",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "revet": "./dist/revet.js" },
+  "engines": { "node": ">=20.0.0" },
+  "files": ["dist", "packs", "README.md", "README.ko.md"],
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "esbuild": "^0.24.0",
+    "yaml": "^2.5.0",
+    "@types/node": "^22.0.0"
+  },
+  "scripts": {
+    "compile:packs": "node scripts/compile-packs.mjs",
+    "build": "npm run compile:packs && node esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "bench": "vitest run test/perf.bench.ts",
+    "lint:cleanroom": "node scripts/cleanroom-check.mjs"
+  }
+}

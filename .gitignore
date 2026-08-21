@@ -1,0 +1,6 @@
+node_modules/
+dist/
+src/packs/compiled.json
+.revet/
+*.log
+*.tsbuildinfo
