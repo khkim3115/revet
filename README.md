@@ -33,6 +33,11 @@ $ revet doctor
 
 That is `examples/bad-harness` in this repository. Run it yourself.
 
+revet gates its own repository with its own `core` pack, and scores `A / 90`
+against its own scanner. The single finding it reports on itself is that
+`SessionStart` and `Stop` are unwired, which is accurate: briefing hooks are a
+v0.2 feature.
+
 ## Why this exists
 
 Agent hooks get written per project, as shell scripts, from scratch. On a legacy
@@ -189,6 +194,13 @@ the whole tool off instead.
 Bundled packs: `core` (destructive commands, history rewrites, path string
 comparison) and `legacy-php5` (PHP 5 syntax limits).
 
+One honest limitation: `command` patterns match the command line as a whole,
+including text inside quoted arguments, so a command that merely *mentions* a
+recursive delete is blocked alongside one that performs it. That is the
+deliberate trade -- a matcher narrow enough never to false-positive is also
+narrow enough to miss a delete assembled from variables at runtime -- and it is
+why per-rule `overrides` are a first-class feature rather than an afterthought.
+
 ## Design notes
 
 **The `warn` verdict is not an exit code.** On `PreToolUse` there is no exit
@@ -203,6 +215,13 @@ measured; see [docs/hook-contract.md](docs/hook-contract.md).
 **Fail closed.** Any internal failure -- unparseable payload, unknown event,
 missing rule pack -- exits 2 rather than 0. A broken revet has to be louder
 than an absent one, because an absent one is silent.
+
+**Every gate is audited, not just revet's own.** `doctor` resolves the actual
+executable behind each hook command, and follows `node`, `python`, `sh` and
+friends through to the script they were told to run -- resolving `node` proves
+nothing when the script beside it has been deleted. A hook pointing at a shell
+script that no longer exists dies exactly the way revet would, and it is far
+likelier to be the one nobody notices.
 
 **Never compare paths as strings.** Separator and case differences make string
 path comparison silently wrong on some platforms, and a gate built on it can

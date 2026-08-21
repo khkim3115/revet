@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "node dist/revet.cjs hook pre-bash" }]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command", "command": "node dist/revet.cjs hook pre-edit" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command", "command": "node dist/revet.cjs hook post-edit" }]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git filter-branch *)",
+      "Bash(git reset --hard *)"
+    ]
+  }
+}

@@ -3,7 +3,7 @@
     "PreToolUse": [
       {
         "matcher": "Bash",
-        "hooks": [{ "type": "command", "command": "revet hook pre-bash" }]
+        "hooks": [{ "type": "command", "command": "node_modules/.bin/revet hook pre-bash" }]
       }
     ],
     "PostToolUse": [
