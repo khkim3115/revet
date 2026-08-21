@@ -1,0 +1,42 @@
+pack: legacy-php5
+version: 1
+rules:
+  - id: legacy-php5/null-coalescing
+    event: post-edit
+    match:
+      path: '**/*.php'
+      added: '\?\?'
+    verdict: block
+    message: "Null coalescing (??) requires PHP 7."
+    why: "This pack targets codebases pinned to PHP 5; ?? is a parse error there."
+    fix: "Use isset($a) ? $a : $default."
+
+  - id: legacy-php5/short-ternary
+    event: post-edit
+    match:
+      path: '**/*.php'
+      added: '\?\s*:'
+    verdict: warn
+    message: "Short ternary (?:) is easy to misread in PHP 5 codebases."
+    why: "Legal since 5.3, but mixed with the long form it hides null-vs-falsy bugs."
+    fix: "Write the condition out explicitly."
+
+  - id: legacy-php5/arrow-fn
+    event: post-edit
+    match:
+      path: '**/*.php'
+      added: '\bfn\s*\([^)]*\)\s*=>'
+    verdict: block
+    message: "Arrow functions require PHP 7.4."
+    why: "Parse error on PHP 5."
+    fix: "Use a named function or function() { } with use()."
+
+  - id: legacy-php5/scalar-typehint
+    event: post-edit
+    match:
+      path: '**/*.php'
+      added: '\bfunction\s+\w+\s*\([^)]*\b(int|float|string|bool)\s+\$|\)\s*:\s*(int|float|string|bool|void)\b'
+    verdict: block
+    message: "Scalar type hints and return types require PHP 7."
+    why: "Parse error on PHP 5."
+    fix: "Document types in a docblock instead."

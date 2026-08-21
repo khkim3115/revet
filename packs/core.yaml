@@ -11,3 +11,33 @@ rules:
       settings.json permissions.deny cannot see runtime-composed commands
       (pipes, subshells, variable expansion, globbing). This is the second line.
     fix: "If intentional, run it outside the agent session."
+
+  - id: core/git-force-push
+    event: pre-bash
+    match:
+      command: 'git\s+push\b[^\n]*--force(?!-with-lease)'
+    verdict: block
+    message: "Force push blocked. Use --force-with-lease."
+    why: "A plain --force discards commits pushed by others between your fetch and push."
+    fix: "git push --force-with-lease"
+
+  - id: core/history-rewrite
+    event: pre-bash
+    match:
+      command: '\bgit\s+(filter-branch|filter-repo)\b|\bgit\s+reset\s+--hard\s+\w'
+    verdict: block
+    message: "History rewrite blocked."
+    why: "Rewrites are unrecoverable for anyone who already pulled the old history."
+    fix: "Run it yourself outside the agent session, after confirming the blast radius."
+
+  - id: core/path-string-compare
+    event: post-edit
+    match:
+      added: '===?\s*\w+\s*\+\s*[''"][/\\]|[''"][/\\][^''"]*[''"]\s*===?'
+    verdict: warn
+    message: "Path compared as a concatenated string."
+    why: >
+      Separator and case differences make string path comparison silently
+      wrong on some platforms. A gate built on it can look active while
+      never firing.
+    fix: "Compare with path.relative() / path.resolve() instead."
