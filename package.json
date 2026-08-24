@@ -1,6 +1,6 @@
 {
   "name": "revet",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Guardrails for AI coding agents on legacy codebases",
   "license": "MIT",
   "author": "Kwanghwi Kim (https://github.com/khkim3115)",
@@ -24,7 +24,7 @@
   ],
   "type": "module",
   "bin": {
-    "revet": "./dist/revet.cjs"
+    "revet": "dist/revet.cjs"
   },
   "engines": {
     "node": ">=20.0.0"
