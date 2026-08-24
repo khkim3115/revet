@@ -1,0 +1,82 @@
+# Publishes to npm when a v* tag is pushed.
+#
+# Authentication is npm trusted publishing (OIDC): there is no npm token in this
+# repository's secrets. The registry trusts a short-lived token minted by GitHub
+# for this exact workflow file, so the trusted publisher registered on npmjs.com
+# names *release.yml* -- renaming this file breaks publishing until the npm-side
+# configuration is renamed to match.
+#
+# Because the token is minted per run, npm attaches a provenance attestation
+# automatically. `--provenance` is passed anyway so the intent is readable here
+# and so the job still signs if authentication ever falls back to a token.
+#
+# To cut a release: bump the version in package.json, commit, then push the
+# matching tag. Never move a tag that has already been pushed -- bump instead.
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # mint the OIDC token npm exchanges for a publish credential
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest # OIDC trusted publishing does not work on self-hosted runners
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24' # trusted publishing needs Node >= 22.14.0
+          registry-url: 'https://registry.npmjs.org'
+
+      # Documented minimum for OIDC trusted publishing. An older npm would fall
+      # back to token auth, find no token, and fail -- but it would fail with an
+      # authentication error that says nothing about the real cause.
+      - run: npm install -g npm@^11.5.1
+
+      # A published version that does not match its tag makes the git history
+      # useless as a record of what was shipped.
+      - name: Tag must match package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION" >&2
+            exit 1
+          fi
+          echo "publishing $PKG_VERSION from tag $GITHUB_REF_NAME"
+
+      - run: npm ci
+
+      - run: npm run lint:cleanroom
+
+      # Explicit, not left to `prepare`. dist/ is gitignored, so a checkout
+      # carries no runtime at all.
+      - run: npm run build
+
+      - run: npm run typecheck
+
+      - run: npm test
+
+      # Publishing an empty dist/ would ship a package whose hooks resolve to
+      # nothing and therefore pass every gate in silence -- the exact failure
+      # this tool exists to detect. So check the tarball rather than the working
+      # tree: pack it, unpack it, and run the runtime that came out of it.
+      # The assertion is on output, not on the exit code: a bundle that starts
+      # but carries no compiled rule packs still exits, and a gate that only
+      # checks that something ran is the kind of gate this project exists to
+      # complain about. `why:` is printed only when the rule was really found.
+      - name: Packed tarball must carry a working runtime
+        run: |
+          npm pack --pack-destination "$RUNNER_TEMP"
+          tar -xzf "$RUNNER_TEMP"/*.tgz -C "$RUNNER_TEMP"
+          test -s "$RUNNER_TEMP/package/dist/revet.cjs"
+          node "$RUNNER_TEMP/package/dist/revet.cjs" explain core/path-string-compare | grep -q 'why:'
+
+      - name: Publish
+        run: npm publish --provenance --access public
