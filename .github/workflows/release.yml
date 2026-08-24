@@ -103,3 +103,22 @@ jobs:
       # happened -- there is nothing else it could have authenticated with.
       - name: Publish
         run: npm publish --provenance --access public
+
+      # npm runs the OIDC exchange quietly: when it returns no token the console
+      # says ENEEDAUTH and nothing about the cause, which is indistinguishable
+      # from a dozen other misconfigurations. The debug log always records at
+      # verbose level regardless of console loglevel, so surface the lines that
+      # explain it. Redacted, because a token that was successfully minted would
+      # otherwise be written to a public log.
+      - name: Explain a failed publish
+        if: failure()
+        run: |
+          shopt -s nullglob
+          for f in "$HOME"/.npm/_logs/*-debug-0.log; do
+            echo "=== $f ==="
+            grep -iE 'oidc|id.token|exchange|trusted|needauth|E404|40[13]' "$f" \
+              | sed -E -e 's/eyJ[A-Za-z0-9._-]+/<redacted-jwt>/g' \
+                        -e 's/(Bearer )[^ "]+/\1<redacted>/g' \
+                        -e 's/("token" *: *")[^"]+/\1<redacted>/g' \
+                        -e 's/npm_[A-Za-z0-9]+/<redacted>/g'
+          done
