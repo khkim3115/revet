@@ -79,8 +79,12 @@ one that can fail silently.
 ## Install
 
 ```bash
-npm install --save-dev revet
+npm install --save-dev @khkim3115/revet
 ```
+
+The package is scoped; the command it installs is not. npm declined the
+unscoped name as too close to existing packages (`ret`, `raven`, `leven` and
+others), so the scope is where that goes rather than into the CLI you type.
 
 Then in `.claude/settings.json` -- no hook scripts in your repository, the
 settings file calls the runtime directly:

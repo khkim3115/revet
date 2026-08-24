@@ -71,8 +71,12 @@ command: "revet-does-not-exist hook pre-bash"
 ## 설치
 
 ```bash
-npm install --save-dev revet
+npm install --save-dev @khkim3115/revet
 ```
+
+패키지는 스코프가 붙지만 **설치되는 명령어는 `revet` 그대로**다. npm 이 무스코프
+`revet` 을 기존 패키지(`ret`·`raven`·`leven` 등)와 너무 비슷하다며 거부해서, 그 부담을
+직접 타이핑하는 CLI 가 아니라 스코프 쪽으로 넘겼다.
 
 `.claude/settings.json` — 레포에 훅 스크립트 파일은 0개다. settings 가 런타임을 직접 부른다:
 

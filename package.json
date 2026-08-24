@@ -1,6 +1,6 @@
 {
-  "name": "revet",
-  "version": "0.1.2",
+  "name": "@khkim3115/revet",
+  "version": "0.1.3",
   "description": "Guardrails for AI coding agents on legacy codebases",
   "license": "MIT",
   "author": "Kwanghwi Kim (https://github.com/khkim3115)",
@@ -37,6 +37,9 @@
     "README.ko.md",
     "CLEANROOM.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "esbuild": "^0.25.12",
