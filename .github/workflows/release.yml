@@ -34,6 +34,26 @@ jobs:
           node-version: '24' # trusted publishing needs Node >= 22.14.0
           registry-url: 'https://registry.npmjs.org'
 
+      # `registry-url` above is what writes the .npmrc naming the registry, but
+      # it also writes `//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}` and
+      # substitutes a literal placeholder when no token is supplied. npm then
+      # reads that as auth already being configured, never attempts the OIDC
+      # exchange, and publishes with a token that is not a token -- to which the
+      # registry replies 404. Measured, not inferred: the first run of this
+      # workflow failed in exactly that way, having signed the provenance
+      # statement first, because signing uses the ID token directly and only
+      # authorization goes through the exchange.
+      # actions/setup-node#1551 and npm/documentation#1960 (whose example
+      # workflow has the same defect).
+      - name: Drop the placeholder token so OIDC is actually reached
+        run: |
+          NPMRC="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          sed -i '/_authToken/d' "$NPMRC"
+          if grep -q '_authToken' "$NPMRC"; then
+            echo "an auth token survived in $NPMRC; the publish would bypass OIDC" >&2
+            exit 1
+          fi
+
       # Documented minimum for OIDC trusted publishing. An older npm would fall
       # back to token auth, find no token, and fail -- but it would fail with an
       # authentication error that says nothing about the real cause.
@@ -78,5 +98,8 @@ jobs:
           test -s "$RUNNER_TEMP/package/dist/revet.cjs"
           node "$RUNNER_TEMP/package/dist/revet.cjs" explain core/path-string-compare | grep -q 'why:'
 
+      # With no token left in the .npmrc and none in repository secrets, a
+      # successful publish is itself the evidence that the OIDC exchange
+      # happened -- there is nothing else it could have authenticated with.
       - name: Publish
         run: npm publish --provenance --access public
